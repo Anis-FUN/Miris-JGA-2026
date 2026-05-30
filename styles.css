@@ -1,0 +1,222 @@
+:root {
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: #f5f6f7;
+  color: #111;
+}
+
+header {
+  padding: 16px 16px 8px;
+  background: white;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  border-bottom: 1px solid #eee;
+}
+
+h1 {
+  margin: 0;
+  font-size: 18px;
+}
+
+h2 {
+  margin-top: 0;
+}
+
+.sub {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+
+#resetBtn {
+  border: 1px solid #ddd;
+  background: #fff;
+  padding: 8px 10px;
+  border-radius: 10px;
+}
+
+main {
+  padding: 16px;
+  display: grid;
+  gap: 16px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.card {
+  background: white;
+  border: 1px solid #eee;
+  border-radius: 16px;
+  padding: 14px;
+  box-shadow: 0 1px 10px rgba(0,0,0,.04);
+}
+
+.locationBlock {
+  margin: 10px 0;
+  padding: 10px;
+  border-radius: 12px;
+  background: #f7f7f7;
+}
+
+#currentBox,
+#nextBox {
+  font-weight: 700;
+  font-size: 16px;
+  margin-top: 4px;
+}
+
+#map {
+  height: 420px;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid #eee;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.label {
+  font-size: 12px;
+  color: #666;
+}
+
+.value {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.codeRow {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+#codeInput {
+  flex: 1;
+  min-width: 0;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid #ddd;
+  font-size: 16px;
+}
+
+#codeBtn {
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #ddd;
+  background: #111;
+  color: white;
+  font-size: 16px;
+  white-space: nowrap;
+}
+
+.feedback {
+  margin-top: 10px;
+  min-height: 20px;
+  font-weight: 600;
+}
+
+.feedback.ok {
+  color: #0a7a2f;
+}
+
+.feedback.bad {
+  color: #b00020;
+}
+
+.small {
+  font-size: 12px;
+  color: #666;
+  margin-top: 8px;
+}
+
+.hint {
+  margin-top: 12px;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid #eee;
+}
+
+.hint summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+#riddle {
+  margin-top: 10px;
+  white-space: pre-wrap;
+}
+
+.stationIcon {
+  border-radius: 999px;
+  color: white;
+  text-align: center;
+  font-weight: 800;
+  line-height: 28px;
+  border: 2px solid white;
+  box-shadow: 0 2px 8px rgba(0,0,0,.25);
+}
+
+.unlockedIcon {
+  background: #0a7a2f;
+  line-height: 24px;
+}
+
+.currentIcon {
+  background: #1d4ed8;
+  line-height: 26px;
+}
+
+.nextIcon {
+  background: #b00020;
+  line-height: 30px;
+}
+
+.fallbackRoute {
+  stroke: #777;
+  stroke-width: 4;
+  stroke-dasharray: 8 8;
+  opacity: .65;
+}
+
+.komootRoute {
+  stroke: #111;
+  stroke-width: 5;
+  opacity: .85;
+}
+
+.activeLeg {
+  stroke: #b00020;
+  stroke-width: 4;
+  stroke-dasharray: 4 8;
+  opacity: .9;
+}
+
+a {
+  color: #111;
+  font-weight: 700;
+}
+
+@media (max-width: 560px) {
+  .codeRow {
+    flex-direction: column;
+  }
+
+  #codeBtn {
+    width: 100%;
+  }
+
+  #map {
+    height: 360px;
+  }
+}

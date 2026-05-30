@@ -1,0 +1,101 @@
+{
+  "komootUrl": "https://www.komoot.com/de-de/smarttour/1594254/zoom?query=d01AuvZ-QBwtUw%3DFwdsEzqXKx-pLJNP_LfJRAlH2cIN_90S_6EKWDJm5qRn3poAfHmK5A_MvAeBaKCSW-PAeBcS65wNoAeBfZ_QYjAQAChJYDwNcXoYjSIZM4YPZMCPSAAAAAAeBmBA9wn9Pfz_49A%3D",
+  "waypoints": [
+    {
+      "title": "Startpunkt – 7 Rue du Lotissement",
+      "label": "7 Rue du Lotissement, Lemberg, Grand Est 57620, Frankreich",
+      "lat": 49.00628,
+      "lon": 7.37635
+    },
+    {
+      "title": "Station 1 – Ondinen Wasserfall",
+      "label": "Ondinen Wasserfall",
+      "lat": 49.006182,
+      "lon": 7.387288
+    },
+    {
+      "title": "Station 2 – Krippenfelsen Grotte",
+      "label": "Krippenfelsen Grotte",
+      "lat": 49.004704,
+      "lon": 7.405424
+    },
+    {
+      "title": "Station 3 – Chorfelsen",
+      "label": "Chorfelsen",
+      "lat": 49.001464,
+      "lon": 7.398123
+    },
+    {
+      "title": "Station 4 – Höhle des Hasslingerfelsen",
+      "label": "Höhle des Hasslingerfelsen",
+      "lat": 48.997272,
+      "lon": 7.400575
+    },
+    {
+      "title": "Station 5 – Skulpturenfelsen von Lemberg",
+      "label": "Skulpturenfelsen von Lemberg",
+      "lat": 49.000957,
+      "lon": 7.394629
+    },
+    {
+      "title": "Station 6 – Schöner Weiher",
+      "label": "Schöner Weiher",
+      "lat": 49.002653,
+      "lon": 7.391482
+    },
+    {
+      "title": "Station 7 – Waschhaus von Helloch",
+      "label": "Waschhaus von Helloch",
+      "lat": 49.00378,
+      "lon": 7.386502
+    },
+    {
+      "title": "Ziel – zurück zum Startpunkt",
+      "label": "7 Rue du Lotissement, Lemberg, Grand Est 57620, Frankreich",
+      "lat": 49.00628,
+      "lon": 7.37635
+    }
+  ],
+  "challenges": [
+    {
+      "title": "Rätsel 1",
+      "riddle": "Löst Rätsel 1 und gebt das Lösungswort ein, um den Ondinen Wasserfall freizuschalten.",
+      "code": "290320"
+    },
+    {
+      "title": "Rätsel 2",
+      "riddle": "Löst Rätsel 2 und gebt das Lösungswort ein, um die Krippenfelsen Grotte freizuschalten.",
+      "code": "240520"
+    },
+    {
+      "title": "Rätsel 3",
+      "riddle": "Löst Rätsel 3 und gebt das Lösungswort ein, um den Chorfelsen freizuschalten.",
+      "code": "rhabarbeRkucHen"
+    },
+    {
+      "title": "Rätsel 4",
+      "riddle": "Löst Rätsel 4 und gebt das Lösungswort ein, um die Höhle des Hasslingerfelsen freizuschalten.",
+      "code": "200620"
+    },
+    {
+      "title": "Rätsel 5",
+      "riddle": "Löst Rätsel 5 und gebt das Lösungswort ein, um den Skulpturenfelsen von Lemberg freizuschalten.",
+      "code": "Bad Sobernheim"
+    },
+    {
+      "title": "Rätsel 6",
+      "riddle": "Löst Rätsel 6 und gebt das Lösungswort ein, um den Schönen Weiher freizuschalten.",
+      "code": "Klettersteig zum Gjaidstein"
+    },
+    {
+      "title": "Rätsel 7",
+      "riddle": "Löst Rätsel 7 und gebt das Lösungswort ein, um das Waschhaus von Helloch freizuschalten.",
+      "code": "Kyrburg"
+    },
+    {
+      "title": "Rätsel 8",
+      "riddle": "Löst Rätsel 8 und gebt das Lösungswort ein, um den Rückweg zum Startpunkt freizuschalten.",
+      "code": "010826"
+    }
+  ]
+}

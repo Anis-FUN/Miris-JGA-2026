@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>JGA Rätsel-Wanderung</title>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <h1>JGA Rätsel-Wanderung</h1>
+    <div class="sub">
+      <span id="status">Lade…</span>
+      <button id="resetBtn" title="Fortschritt zurücksetzen">Reset</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2 id="taskTitle">Aktuelle Aufgabe</h2>
+
+      <div class="locationBlock">
+        <div class="label">Ihr seid hier / aktueller Punkt</div>
+        <div id="currentBox">—</div>
+      </div>
+
+      <div class="locationBlock">
+        <div class="label">Nächster freizuschaltender Punkt</div>
+        <div id="nextBox">—</div>
+      </div>
+
+      <div class="grid">
+        <div>
+          <div class="label">Entfernung zum nächsten Punkt</div>
+          <div class="value" id="distance">—</div>
+        </div>
+        <div>
+          <div class="label">Fortschritt</div>
+          <div class="value" id="progress">—</div>
+        </div>
+      </div>
+
+      <details class="hint" open>
+        <summary>Rätsel anzeigen</summary>
+        <div id="riddle">—</div>
+      </details>
+
+      <div class="codeRow">
+        <input id="codeInput" placeholder="Lösungswort eingeben" autocomplete="off" />
+        <button id="codeBtn">Freischalten</button>
+      </div>
+
+      <div id="feedback" class="feedback"></div>
+    </section>
+
+    <section class="card">
+      <h2>Karte</h2>
+      <div id="map"></div>
+      <p class="small">
+        Tipp: Standortfreigabe erlauben. Wenn eine <strong>route.gpx</strong> im Ordner liegt,
+        wird die Komoot-Route angezeigt. Sonst wird eine einfache Verbindungslinie über die Stationen genutzt.
+      </p>
+      <p class="small">
+        <a id="komootLink" href="#" target="_blank" rel="noopener">Komoot-Route öffnen</a>
+      </p>
+    </section>
+  </main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-gpx@1.7.0/gpx.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
