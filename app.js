@@ -1,30 +1,22 @@
-const STORAGE_KEY = "jga_progress_v2";
+const STORAGE_KEY = "jga_progress_v3";
 
 let map;
 let userMarker;
-let nextMarker;
-let currentMarker;
-let activeLegLine;
-let fallbackRouteLine;
-let gpxRouteLayer;
+let visibleTargetMarker;
+let visibleLegLine;
 let stationsData = null;
+let routeTrack = [];
+let legRanges = [];
 let lastUserLatLng = null;
 
-const unlockedIcon = L.divIcon({
-  className: "stationIcon unlockedIcon",
-  html: "✓",
-  iconSize: [26, 26],
-  iconAnchor: [13, 13]
+const startIcon = L.divIcon({
+  className: "stationIcon startIcon",
+  html: "S",
+  iconSize: [32, 32],
+  iconAnchor: [16, 16]
 });
 
-const currentIcon = L.divIcon({
-  className: "stationIcon currentIcon",
-  html: "●",
-  iconSize: [30, 30],
-  iconAnchor: [15, 15]
-});
-
-const nextIcon = L.divIcon({
+const targetIcon = L.divIcon({
   className: "stationIcon nextIcon",
   html: "★",
   iconSize: [34, 34],
@@ -88,158 +80,207 @@ function setFeedback(text, ok) {
   el.className = "feedback " + (ok ? "ok" : "bad");
 }
 
-function getCurrentWaypoint(progress) {
-  return stationsData.waypoints[progress.unlocked];
-}
-
-function getNextWaypoint(progress) {
-  return stationsData.waypoints[progress.unlocked + 1] || null;
-}
-
 function getCurrentChallenge(progress) {
   return stationsData.challenges[progress.unlocked] || null;
 }
 
-function clearLayer(layer) {
-  if (layer) layer.remove();
+function getVisibleTarget(progress) {
+  if (progress.unlocked <= 0) return null;
+  return stationsData.waypoints[progress.unlocked] || null;
 }
 
-function drawFallbackRoute() {
-  const points = stationsData.waypoints.map((wp) => [wp.lat, wp.lon]);
-
-  fallbackRouteLine = L.polyline(points, {
-    className: "fallbackRoute"
-  }).addTo(map);
+function getVisibleStartOfLeg(progress) {
+  if (progress.unlocked <= 0) return null;
+  return stationsData.waypoints[progress.unlocked - 1] || null;
 }
 
-function drawWaypointMarkers(progress) {
-  stationsData.waypoints.forEach((wp, index) => {
-    if (index === 0) return;
+function findClosestIndex(points, waypoint, startIndex = 0) {
+  let bestIndex = startIndex;
+  let bestDistance = Infinity;
 
-    if (index <= progress.unlocked) {
-      L.marker([wp.lat, wp.lon], { icon: unlockedIcon })
-        .addTo(map)
-        .bindPopup(`Freigeschaltet: ${wp.title}`);
+  for (let i = startIndex; i < points.length; i++) {
+    const p = points[i];
+    const d = haversineMeters(p[0], p[1], waypoint.lat, waypoint.lon);
+
+    if (d < bestDistance) {
+      bestDistance = d;
+      bestIndex = i;
     }
+  }
+
+  return bestIndex;
+}
+
+function buildLegRanges() {
+  legRanges = [];
+
+  if (!routeTrack.length || !stationsData?.waypoints?.length) return;
+
+  let searchFrom = 0;
+
+  for (let i = 1; i < stationsData.waypoints.length; i++) {
+    const fromWp = stationsData.waypoints[i - 1];
+    const toWp = stationsData.waypoints[i];
+
+    const fromIndex = findClosestIndex(routeTrack, fromWp, searchFrom);
+    const toIndex = findClosestIndex(routeTrack, toWp, fromIndex);
+
+    legRanges[i] = {
+      fromIndex,
+      toIndex
+    };
+
+    searchFrom = toIndex;
+  }
+}
+
+async function loadRouteTrackHidden() {
+  try {
+    const res = await fetch("route.gpx", { cache: "no-store" });
+    if (!res.ok) throw new Error("route.gpx nicht gefunden");
+
+    const gpxText = await res.text();
+    const parser = new DOMParser();
+    const xml = parser.parseFromString(gpxText, "application/xml");
+
+    const trkpts = [...xml.getElementsByTagNameNS("*", "trkpt")];
+
+    routeTrack = trkpts
+      .map((pt) => [
+        Number(pt.getAttribute("lat")),
+        Number(pt.getAttribute("lon"))
+      ])
+      .filter(([lat, lon]) => Number.isFinite(lat) && Number.isFinite(lon));
+
+    buildLegRanges();
+    setStatus("Route geladen.");
+  } catch (err) {
+    console.warn(err);
+    routeTrack = [];
+    legRanges = [];
+    setStatus("Route nicht gefunden. Direkte Linie aktiv.");
+  }
+}
+
+function getRouteSegmentForUnlocked(unlocked) {
+  const fromWp = stationsData.waypoints[unlocked - 1];
+  const toWp = stationsData.waypoints[unlocked];
+
+  if (!fromWp || !toWp) return [];
+
+  const fallback = [
+    [fromWp.lat, fromWp.lon],
+    [toWp.lat, toWp.lon]
+  ];
+
+  const range = legRanges[unlocked];
+
+  if (!routeTrack.length || !range) return fallback;
+
+  const segment = routeTrack.slice(range.fromIndex, range.toIndex + 1);
+
+  if (segment.length < 2) return fallback;
+
+  return [
+    [fromWp.lat, fromWp.lon],
+    ...segment,
+    [toWp.lat, toWp.lon]
+  ];
+}
+
+function updateVisibleTarget(progress) {
+  const target = getVisibleTarget(progress);
+
+  if (!target) {
+    if (visibleTargetMarker) {
+      visibleTargetMarker.remove();
+      visibleTargetMarker = null;
+    }
+    return;
+  }
+
+  const latLng = [target.lat, target.lon];
+
+  if (!visibleTargetMarker) {
+    visibleTargetMarker = L.marker(latLng, { icon: targetIcon })
+      .addTo(map)
+      .bindPopup(target.title);
+  } else {
+    visibleTargetMarker.setLatLng(latLng);
+  }
+
+  visibleTargetMarker.setPopupContent(`<strong>${target.title}</strong><br>${target.label || ""}`);
+}
+
+function updateVisibleLeg(progress) {
+  if (visibleLegLine) {
+    visibleLegLine.remove();
+    visibleLegLine = null;
+  }
+
+  if (progress.unlocked <= 0) return;
+
+  const points = getRouteSegmentForUnlocked(progress.unlocked);
+
+  visibleLegLine = L.polyline(points, {
+    className: "activeLeg"
+  }).addTo(map);
+
+  map.fitBounds(visibleLegLine.getBounds(), {
+    padding: [30, 30]
   });
 }
 
-function updateActiveMarkers(progress) {
-  const current = getCurrentWaypoint(progress);
-  const next = getNextWaypoint(progress);
+function updateDistance(progress) {
+  const target = getVisibleTarget(progress);
 
-  if (current) {
-    const currentLatLng = [current.lat, current.lon];
-
-    if (!currentMarker) {
-      currentMarker = L.marker(currentLatLng, { icon: currentIcon })
-        .addTo(map)
-        .bindPopup("Aktueller Punkt");
-    } else {
-      currentMarker.setLatLng(currentLatLng);
-    }
-
-    currentMarker.setPopupContent(`Aktueller Punkt:<br><strong>${current.title}</strong>`);
-  }
-
-  if (next) {
-    const nextLatLng = [next.lat, next.lon];
-
-    if (!nextMarker) {
-      nextMarker = L.marker(nextLatLng, { icon: nextIcon })
-        .addTo(map)
-        .bindPopup("Nächster Punkt");
-    } else {
-      nextMarker.setLatLng(nextLatLng);
-    }
-
-    nextMarker.setPopupContent(`Nächster Punkt:<br><strong>${next.title}</strong>`);
-  } else {
-    clearLayer(nextMarker);
-    nextMarker = null;
-  }
-}
-
-function updateActiveLeg(progress, userLatLng = null) {
-  const next = getNextWaypoint(progress);
-
-  if (!next) {
-    clearLayer(activeLegLine);
-    activeLegLine = null;
+  if (!target) {
     document.getElementById("distance").textContent = "—";
     return;
   }
 
-  const from = userLatLng || [getCurrentWaypoint(progress).lat, getCurrentWaypoint(progress).lon];
-  const to = [next.lat, next.lon];
+  const from = lastUserLatLng || [getVisibleStartOfLeg(progress).lat, getVisibleStartOfLeg(progress).lon];
 
-  const points = [from, to];
-
-  if (!activeLegLine) {
-    activeLegLine = L.polyline(points, {
-      className: "activeLeg"
-    }).addTo(map);
-  } else {
-    activeLegLine.setLatLngs(points);
-  }
-
-  const distance = haversineMeters(from[0], from[1], next.lat, next.lon);
+  const distance = haversineMeters(from[0], from[1], target.lat, target.lon);
   document.getElementById("distance").textContent = fmtDistance(distance);
 }
 
-function updateUI(progress, userLatLng = lastUserLatLng) {
+function updateUI(progress) {
   const totalChallenges = stationsData.challenges.length;
-  const current = getCurrentWaypoint(progress);
-  const next = getNextWaypoint(progress);
   const challenge = getCurrentChallenge(progress);
+  const visibleTarget = getVisibleTarget(progress);
+  const visibleStart = getVisibleStartOfLeg(progress);
 
   document.getElementById("progress").textContent =
     `${Math.min(progress.unlocked, totalChallenges)} / ${totalChallenges}`;
 
-  if (!challenge || !next) {
-    document.getElementById("taskTitle").textContent = "Geschafft!";
-    document.getElementById("currentBox").textContent = current?.title || "Ziel erreicht";
-    document.getElementById("nextBox").textContent = "🎉 Alle Stationen gelöst.";
-    document.getElementById("riddle").textContent = "Ihr habt die komplette JGA-Wanderung geschafft!";
+  if (progress.unlocked === 0) {
+    document.getElementById("taskTitle").textContent = "Start";
+    document.getElementById("currentBox").textContent = stationsData.waypoints[0].title;
+    document.getElementById("nextBox").textContent = "Noch kein Ziel freigeschaltet.";
+    document.getElementById("riddle").textContent = challenge?.riddle || "—";
     document.getElementById("distance").textContent = "—";
 
-    clearLayer(nextMarker);
-    nextMarker = null;
-    clearLayer(activeLegLine);
-    activeLegLine = null;
-
+    updateVisibleTarget(progress);
+    updateVisibleLeg(progress);
     return;
   }
 
-  document.getElementById("taskTitle").textContent = challenge.title;
-  document.getElementById("currentBox").textContent = current.title;
-  document.getElementById("nextBox").textContent = next.title;
-  document.getElementById("riddle").textContent = challenge.riddle || "—";
+  if (!challenge && progress.unlocked >= totalChallenges) {
+    document.getElementById("taskTitle").textContent = "Finale Strecke";
+    document.getElementById("currentBox").textContent = visibleStart?.title || "—";
+    document.getElementById("nextBox").textContent = visibleTarget?.title || "Ziel erreicht";
+    document.getElementById("riddle").textContent = "🎉 Alle Rätsel gelöst. Folgt der letzten Route zurück zum Startpunkt.";
+  } else {
+    document.getElementById("taskTitle").textContent = challenge?.title || "Nächste Strecke";
+    document.getElementById("currentBox").textContent = visibleStart?.title || "—";
+    document.getElementById("nextBox").textContent = visibleTarget?.title || "—";
+    document.getElementById("riddle").textContent = challenge?.riddle || "—";
+  }
 
-  updateActiveMarkers(progress);
-  updateActiveLeg(progress, userLatLng);
-}
-
-function refreshMapAfterUnlock(progress) {
-  clearLayer(currentMarker);
-  clearLayer(nextMarker);
-  currentMarker = null;
-  nextMarker = null;
-
-  map.eachLayer((layer) => {
-    if (
-      layer instanceof L.Marker &&
-      layer.options.icon &&
-      layer.options.icon.options &&
-      layer.options.icon.options.className &&
-      layer.options.icon.options.className.includes("unlockedIcon")
-    ) {
-      map.removeLayer(layer);
-    }
-  });
-
-  drawWaypointMarkers(progress);
-  updateUI(progress, lastUserLatLng);
+  updateVisibleTarget(progress);
+  updateVisibleLeg(progress);
+  updateDistance(progress);
 }
 
 function tryUnlock() {
@@ -264,47 +305,12 @@ function tryUnlock() {
     saveProgress(progress);
 
     document.getElementById("codeInput").value = "";
-    setFeedback("✅ Richtig! Der nächste Punkt ist freigeschaltet.", true);
+    setFeedback("✅ Richtig! Die nächste Strecke ist freigeschaltet.", true);
 
-    refreshMapAfterUnlock(progress);
-
-    const next = getNextWaypoint(progress);
-    if (next) {
-      map.setView([next.lat, next.lon], 15);
-    }
+    updateUI(progress);
   } else {
     setFeedback("❌ Falsches Lösungswort.", false);
   }
-}
-
-function loadKomootGpxIfAvailable() {
-  fetch("route.gpx", { cache: "no-store" })
-    .then((res) => {
-      if (!res.ok) throw new Error("Keine route.gpx gefunden.");
-
-      gpxRouteLayer = new L.GPX("route.gpx", {
-        async: true,
-        marker_options: {
-          startIconUrl: "",
-          endIconUrl: "",
-          shadowUrl: ""
-        },
-        polyline_options: {
-          className: "komootRoute"
-        }
-      })
-        .on("loaded", () => {
-          setStatus("Route geladen.");
-        })
-        .on("error", () => {
-          setStatus("Route konnte nicht geladen werden. Fallback aktiv.");
-        })
-        .addTo(map);
-    })
-    .catch(() => {
-      drawFallbackRoute();
-      setStatus("Fallback-Route aktiv.");
-    });
 }
 
 async function init() {
@@ -315,26 +321,25 @@ async function init() {
 
   const start = stationsData.waypoints[0];
 
-  map = L.map("map").setView([start.lat, start.lon], 14);
+  map = L.map("map").setView([start.lat, start.lon], 15);
 
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
     attribution: "&copy; OpenStreetMap"
   }).addTo(map);
 
-  if (stationsData.komootUrl) {
-    const komootLink = document.getElementById("komootLink");
-    komootLink.href = stationsData.komootUrl;
-  }
-
-  L.marker([start.lat, start.lon])
+  L.marker([start.lat, start.lon], { icon: startIcon })
     .addTo(map)
     .bindPopup(`<strong>Start/Ziel</strong><br>${start.label}`);
 
-  loadKomootGpxIfAvailable();
+  if (stationsData.komootUrl) {
+    const komootLink = document.getElementById("komootLink");
+    if (komootLink) komootLink.href = stationsData.komootUrl;
+  }
+
+  await loadRouteTrackHidden();
 
   const progress = loadProgress();
-  drawWaypointMarkers(progress);
   updateUI(progress);
 
   document.getElementById("codeBtn").addEventListener("click", tryUnlock);
@@ -346,15 +351,6 @@ async function init() {
   document.getElementById("resetBtn").addEventListener("click", () => {
     localStorage.removeItem(STORAGE_KEY);
     setFeedback("Fortschritt zurückgesetzt.", true);
-
-    clearLayer(currentMarker);
-    clearLayer(nextMarker);
-    clearLayer(activeLegLine);
-
-    currentMarker = null;
-    nextMarker = null;
-    activeLegLine = null;
-
     window.location.reload();
   });
 
@@ -381,7 +377,7 @@ async function init() {
         userMarker.setLatLng(lastUserLatLng);
       }
 
-      updateUI(loadProgress(), lastUserLatLng);
+      updateDistance(loadProgress());
       setStatus(`GPS ok ±${Math.round(pos.coords.accuracy)} m`);
     },
     (err) => {
